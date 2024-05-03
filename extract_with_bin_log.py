@@ -5,7 +5,7 @@ import pymysqlreplication
 import csv
 import boto3
 
-# get the MySQL connection info
+# Get the MySQL connection info
 parser = configparser.ConfigParser()
 parser.read("pipeline.conf")
 hostname = parser.get("mysql_config", "hostname")
@@ -20,6 +20,7 @@ mysql_settings = {
 "passwd": password
 }
 
+# Setup to binlog query
 b_stream = BinLogStreamReader(
     connection_settings = mysql_settings,
     server_id=1,
@@ -27,6 +28,7 @@ b_stream = BinLogStreamReader(
 )
 order_events = []
 
+# Iterating over three status from above
 for binlogevent in b_stream:
     for row in binlogevent.rows:
         if binlogevent.table == 'Orders':
@@ -49,6 +51,7 @@ for binlogevent in b_stream:
             order_events.append(event)
 b_stream.close()
 
+# Exporting the results in a CSV file
 keys = order_events[0].keys()
 local_filename = 'orders_extract.csv'
 with open(local_filename, 'w', newline='') as output_file:
@@ -57,7 +60,7 @@ with open(local_filename, 'w', newline='') as output_file:
     )
     dict_writer.writerows(order_events)
 
-# load the aws_boto_credentials values
+# Load the aws_boto_credentials values
 parser = configparser.ConfigParser()
 parser.read("pipeline.conf")
 access_key = parser.get(
@@ -79,6 +82,7 @@ s3 = boto3.client(
 
 s3_file = local_filename
 
+# Uploading file to S3 AWS
 s3.upload_file(
     local_filename,
     bucket_name,
